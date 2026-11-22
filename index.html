@@ -84,6 +84,10 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--a)}
 .card{padding:14px;border-radius:16px;background:rgba(255,255,255,.08);display:flex;flex-direction:column;gap:10px;text-align:center}
 .row2{display:flex;gap:8px}.row2 .btn{flex:1;padding:10px 6px;font-size:13px}
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#3a3a46;padding:10px 18px;border-radius:14px;z-index:99}
+.ib svg,#nav svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#send svg{transform:scaleX(-1);stroke:#fff}
+.tag{font-style:normal;font-size:10px;font-weight:600;margin-inline-start:6px;padding:1px 7px;border-radius:8px;background:color-mix(in srgb,var(--a) 38%,transparent)}
+.badge{margin-inline-start:auto;background:var(--me);border-radius:10px;padding:1px 9px;font-size:11px;font-weight:600}
 .back{display:none}
 @media(max-width:760px){#side{width:100%}#app.in #side{display:none}#app:not(.in) #main{display:none}.back{display:block!important}}
 </style>
@@ -101,20 +105,23 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--a)}
 
 <div id="app" class="hide">
   <aside id="side" class="glass">
-    <div id="tabs"><button data-t="group">👥 گروه‌ها</button><button data-t="channel">📢 کانال‌ها</button><button data-t="dm">💬 پیام شخصی</button></div>
+    <div id="tabs"><button data-t="group">گروه‌ها</button><button data-t="channel">کانال‌ها</button><button data-t="dm">پیام شخصی</button></div>
     <div class="top" id="topbar">
       <button class="ib" id="menuBtn">☰</button>
       <input id="q" placeholder="جست‌وجوی کانال، گروه یا @آیدی">
       <div class="menu hide" id="mainMenu">
-        <button data-a="group">👥 گروه جدید</button>
-        <button data-a="channel">📢 کانال جدید</button>
-        <button data-a="logout">🚪 خروج</button>
+        <button data-a="group">گروه جدید</button>
+        <button data-a="channel">کانال جدید</button>
+        <button data-a="logout">خروج</button>
       </div>
     </div>
     <div id="list"></div>
     <div id="pview" class="pane hide"></div>
     <div id="sview" class="pane hide"></div>
-    <nav id="nav"><button data-v="profile"><b>👤</b>پروفایل</button><button data-v="chats" class="on"><b>💬</b>گفت‌وگو</button></nav>
+    <nav id="nav">
+      <button data-v="profile"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>پروفایل</button>
+      <button data-v="chats" class="on"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>گفت‌وگو</button>
+    </nav>
   </aside>
   <section id="main">
     <div id="ph"><div><div class="logo">MACuan<small>CHT</small></div><p class="mut" style="margin-top:14px">یک گفت‌وگو را انتخاب کن</p></div></div>
@@ -127,14 +134,13 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--a)}
         <div class="menu hide" id="chatMenu"></div>
       </div>
       <div id="msgs"></div>
-      <div id="emo" class="glass hide"></div>
       <div id="bar" class="glass">
-        <button class="ib" id="attBtn" title="فایل">📎</button>
-        <button class="ib" id="imgBtn" title="عکس">🖼️</button>
-        <button class="ib" id="emoBtn" title="ایموجی">😊</button>
+        <button class="ib" id="attBtn" title="فایل"><svg viewBox="0 0 24 24"><path d="M21 11l-9 9a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"/></svg></button>
+        <button class="ib" id="imgBtn" title="عکس"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-9 9"/></svg></button>
         <textarea id="txt" rows="1" placeholder="پیام..."></textarea>
-        <button class="btn ib" id="send" style="width:46px;height:46px;padding:0">➤</button>
+        <button class="btn ib" id="send" style="width:46px;height:46px;padding:0"><svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg></button>
         <button class="btn hide" id="joinBtn" style="flex:1">پیوستن</button>
+        <span class="mut hide" id="ro" style="flex:1;padding:12px">فقط مدیران می‌توانند در کانال پیام بدهند</span>
       </div>
     </div>
   </section>
@@ -148,7 +154,7 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--a)}
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {getDatabase,ref,get,set,update,push,remove,onValue,onChildAdded,onChildChanged,onChildRemoved,query,orderByKey,startAt,endAt,limitToLast,serverTimestamp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import {getDatabase,ref,get,set,update,push,remove,onValue,onChildAdded,onChildChanged,onChildRemoved,query,orderByKey,startAt,endAt,limitToLast,serverTimestamp,onDisconnect} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const app=initializeApp({
   apiKey:"AIzaSyChUirrjcWTE7jLMFGH0k21Zhyl5WrLFmQ",
@@ -160,12 +166,14 @@ const app=initializeApp({
   appId:"1:48687943943:web:e32733553fda92ee01b5a2"
 });
 const auth=getAuth(app),db=getDatabase(app);
-const SITE='https://gamengrahman8-dot.github.io/MACuan-cht/',SUPPORT='09011268205';
+const SITE='https://gamengrahman8-dot.github.io/MACuan-cht/',SUPPORT='09011268205',OFFICIAL='macuancht';
 const $=id=>document.getElementById(id);
 const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.textContent=h;return e};
-let me=null,uid=null,cur=null,curData=null,stopMsgs=null,chats={},watchers={},ucache={},avTmp=null,tab='',openedAt=0;
+let me=null,uid=null,cur=null,curData=null,stopMsgs=null,stopX=null,chats={},watchers={},ucache={},avTmp=null,tab='',openedAt=0,reads={},pres=null,typers=0,started=false;
 const botId=()=>'bot_'+uid,savedId=()=>'saved_'+uid,isPin=id=>id===botId()||id===savedId();
-const pins=()=>({bot:{type:'bot',name:'ربات ماکوان',icon:'🤖',sub:'پیام‌های رسمی ماکوان',members:{[uid]:true}},saved:{type:'saved',name:'پیام‌های ذخیره‌شده',icon:'⭐',sub:'مخصوص خودت',members:{[uid]:true}}});
+const pins=()=>({bot:{type:'bot',name:'ربات ماکوان',icon:'M',sub:'پاسخ‌گوی خودکار ماکوان',members:{[uid]:true}},saved:{type:'saved',name:'پیام‌های ذخیره‌شده',icon:'S',sub:'مخصوص خودت',members:{[uid]:true}}});
+const isOwner=d=>!!d&&d.owner===uid,isAdm=d=>!!(d&&d.admins&&d.admins[uid]),staff=d=>isOwner(d)||isAdm(d);
+const kind=d=>d.type==='channel'?'کانال':'گروه';
 const toast=t=>{const d=el('div','',t);d.id='toast';document.body.append(d);setTimeout(()=>d.remove(),2400)};
 const setAv=(n,photo,name)=>{n.style.backgroundImage=photo?`url(${photo})`:'';n.textContent=photo?'':(Array.from((name||'?').trim())[0]||'?').toUpperCase()};
 const pick=i=>new Promise(r=>{i.value='';i.onchange=()=>r(i.files[0]);i.click()});
@@ -181,6 +189,7 @@ const clean=s=>(s||'').toLowerCase().replace(/[^a-z0-9_]/g,'');
 const getUser=async id=>ucache[id]||(ucache[id]=(await get(ref(db,'users/'+id))).val()||{name:'کاربر'});
 const linkify=(d,t)=>t.split(/(https?:\/\/\S+)/).forEach(p=>{if(/^https?:\/\//.test(p)){const a=el('a','lk',p);a.href=p;a.target='_blank';a.rel='noopener';d.append(a)}else if(p)d.append(document.createTextNode(p))});
 function beep(){try{const c=new (window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.value=.05;o.start();o.stop(c.currentTime+.12)}catch(e){}}
+async function copyT(t){try{await navigator.clipboard.writeText(t)}catch(e){const x=document.createElement('textarea');x.value=t;document.body.append(x);x.select();document.execCommand('copy');x.remove()}toast('کپی شد')}
 
 /* ---------- themes & backgrounds ---------- */
 let S={theme:'violet',bg:'emoji',fs:15,snd:true,bgImg:''};
@@ -202,7 +211,7 @@ const emojiTile=()=>{
 };
 const aTile=()=>svgUrl(`<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240"><text x="30" y="185" font-size="170" font-weight="900" fill="#b9a6ff" fill-opacity=".10" font-family="Arial Black,Arial" transform="rotate(-14 120 120)">A</text></svg>`,240);
 const BGS={
-  emoji:{n:'ایموجی خاکستری',c:()=>`${emojiTile()},linear-gradient(#4a4c52,#2f3136)`},
+  emoji:{n:'طرح خاکستری',c:()=>`${emojiTile()},linear-gradient(#4a4c52,#2f3136)`},
   letter:{n:'حرف A',c:()=>`${aTile()},radial-gradient(900px 600px at 85% -10%,rgba(124,92,255,.35),transparent),radial-gradient(800px 600px at -10% 110%,rgba(34,211,238,.22),transparent),#0d0a1c`},
   aurora:{n:'شفق',c:()=>'radial-gradient(700px 500px at 80% 0,rgba(34,211,238,.35),transparent),radial-gradient(700px 600px at 0 100%,rgba(192,75,255,.35),transparent),#12101f'},
   ocean:{n:'دریا',c:()=>'linear-gradient(160deg,#0f2027,#203a43,#2c5364)'},
@@ -226,30 +235,73 @@ onAuthStateChanged(auth,async u=>{
   if(!me){me={name:u.displayName||'',photo:'',bio:'',username:'',email:u.email};profileModal(true)}
   else startApp();
 });
-let started=false;
 function startApp(){
-  if(started)return;started=true;welcome();
+  if(started)return;started=true;
+  presence();
+  (async()=>{await welcome();await autoJoin().catch(()=>{});await deepLink().catch(()=>{})})();
+  onValue(ref(db,'reads/'+uid),s=>{reads=s.val()||{};renderList()});
   onValue(ref(db,'userChats/'+uid),s=>{
     const ids=Object.keys(s.val()||{});
     ids.forEach(id=>{if(watchers[id])return;watchers[id]=onValue(ref(db,'chats/'+id),async c=>{
-      const d=c.val();if(!d){delete chats[id];renderList();return}
-      if(d.type==='dm'){const o=Object.keys(d.members).find(k=>k!==uid),ou=await getUser(o);d.name=ou.name;d.photo=ou.photo;d.handle=ou.username;d.other=o}
+      const d=c.val();
+      if(!d||!d.members||!d.members[uid]){delete chats[id];renderList();if(d&&id===cur){curData=d;head()}return}
+      if(d.type==='dm'){const o=Object.keys(d.members).find(k=>k!==uid),ou=await getUser(o);d.name=ou.name;d.photo=ou.photo;d.handle=ou.username}
       chats[id]=d;renderList();if(id===cur){curData=d;head()}
     })});
-    Object.keys(chats).forEach(id=>{if(!ids.includes(id)){delete chats[id]}});renderList();
+    Object.keys(chats).forEach(id=>{if(!ids.includes(id))delete chats[id]});renderList();
   });
+}
+function presence(){onValue(ref(db,'.info/connected'),s=>{if(!s.val())return;const p=ref(db,'presence/'+uid);onDisconnect(p).set(Date.now()).then(()=>set(p,true))})}
+/* عضویت خودکار در کانال رسمی */
+async function autoJoin(){
+  const fk='flags/'+uid+'/aj_'+OFFICIAL;
+  if((await get(ref(db,fk))).val())return;
+  let id=(await get(ref(db,'handles/'+OFFICIAL))).val();
+  if(!id){
+    id=push(ref(db,'chats')).key;
+    await update(ref(db),{['chats/'+id]:{type:'channel',name:'MACuan Cht',handle:OFFICIAL,desc:'کانال رسمی ماکوان',photo:'',owner:uid,members:{[uid]:true},lastTs:Date.now()},['handles/'+OFFICIAL]:id,['userChats/'+uid+'/'+id]:true});
+  }else await update(ref(db),{['chats/'+id+'/members/'+uid]:true,['userChats/'+uid+'/'+id]:true});
+  await set(ref(db,fk),true);
+}
+async function deepLink(){
+  const c=clean(new URLSearchParams(location.search).get('c'));if(!c)return;
+  const id=(await get(ref(db,'handles/'+c))).val();if(!id)return;
+  const d=(await get(ref(db,'chats/'+id))).val();if(d)openChat(id,d);
+}
+async function welcome(){
+  const k='mcw_'+uid;if(sessionStorage.getItem(k))return;
+  try{sessionStorage.setItem(k,'1')}catch(e){}
+  const dt=new Date().toLocaleString('fa-IR',{dateStyle:'full',timeStyle:'short'});
+  await push(ref(db,'messages/'+botId()),{uid:'bot',ts:Date.now(),text:`سلام ${me.name||''}\nبه ماکوان خوش آمدید.\n\nتاریخ ورود: ${dt}\nسایت: ${SITE}\n\nبرای دیدن دستورهای ربات بنویس: راهنما`}).catch(()=>{});
+  if(innerWidth>760&&!location.search.includes('c='))openChat(botId(),pins().bot);
+}
+function botReply(t){
+  t=t.trim().toLowerCase();const has=(...k)=>k.some(x=>t.includes(x));let r;
+  if(has('راهنما','help','دستور'))r='دستورهای ربات:\n- ساعت: تاریخ و ساعت الان\n- پروفایل: اطلاعات حساب تو\n- پشتیبانی: راه تماس با پشتیبانی\n- لینک: لینک سایت\n- کانال: کانال رسمی ماکوان\n- آمار: تعداد چت‌های تو';
+  else if(has('سلام','درود','hello'))r=`سلام ${me.name||''}. من ربات ماکوان هستم. برای دیدن دستورها بنویس: راهنما`;
+  else if(has('ساعت','تاریخ','time'))r='الان: '+new Date().toLocaleString('fa-IR',{dateStyle:'full',timeStyle:'short'});
+  else if(has('پروفایل','حساب'))r=`نام: ${me.name}\nنام کاربری: @${me.username}\nبیوگرافی: ${me.bio||'ندارد'}`;
+  else if(has('پشتیبان','support'))r='شماره پشتیبانی: '+SUPPORT;
+  else if(has('لینک','سایت'))r=SITE;
+  else if(has('کانال'))r='کانال رسمی ماکوان: @'+OFFICIAL+'\n'+SITE+'?c='+OFFICIAL;
+  else if(has('آمار'))r='تعداد چت‌های تو: '+Object.keys(chats).length;
+  else r='متوجه نشدم. برای دیدن دستورها بنویس: راهنما';
+  setTimeout(()=>push(ref(db,'messages/'+botId()),{uid:'bot',ts:Date.now(),text:r}),500);
 }
 
 /* ---------- list & search ---------- */
 function rowFor(id,d,onclick){
   const r=el('div','row'+(id===cur?' on':'')),a=el('div','av');setAv(a,d.photo,d.icon||d.name);
-  const t=el('div'),b=el('b',null,(d.type==='channel'?'📢 ':d.type==='group'?'👥 ':'')+(d.name||'')),s=el('span',null,d.sub||d.lastText||(d.handle?'@'+d.handle:''));
-  t.append(b,s);r.append(a,t);r.onclick=onclick;return r;
+  const t=el('div'),b=el('b',null,d.name||''),k={channel:'کانال',group:'گروه',bot:'ربات'}[d.type];
+  if(k)b.append(el('i','tag',k));
+  t.append(b,el('span',null,d.sub||d.lastText||(d.handle?'@'+d.handle:'')));r.append(a,t);
+  if(chats[id]&&id!==cur&&d.lastTs>(reads[id]||0)&&d.lastBy&&d.lastBy!==uid)r.append(el('div','badge','جدید'));
+  r.onclick=onclick;return r;
 }
 function renderList(){
   if($('q').value.trim())return;
   const L=$('list');L.innerHTML='';const p=pins();
-  L.append(rowFor(botId(),p.bot,()=>openChat(botId(),p.bot)),rowFor(savedId(),p.saved,()=>openChat(savedId(),p.saved)));
+  if(!tab||tab==='dm')L.append(rowFor(botId(),p.bot,()=>openChat(botId(),p.bot)),rowFor(savedId(),p.saved,()=>openChat(savedId(),p.saved)));
   const arr=Object.entries(chats).filter(([id,d])=>!tab||d.type===tab).sort((a,b)=>(b[1].lastTs||0)-(a[1].lastTs||0));
   if(!arr.length)L.append(el('div','empty','چتی در این بخش نیست.\nبا جست‌وجوی آیدی کسی را پیدا کن یا گروه بساز.'));
   arr.forEach(([id,d])=>L.append(rowFor(id,d,()=>openChat(id))));
@@ -276,24 +328,33 @@ async function openDM(o){
 
 /* ---------- chat ---------- */
 const isMember=()=>curData&&curData.members&&curData.members[uid];
-function head(){
-  const d=curData;setAv($('chAv'),d.photo,d.icon||d.name);$('chName').textContent=d.name||'';
-  $('chSub').textContent=d.sub||(d.type==='dm'?(d.handle?'@'+d.handle:''):((d.type==='channel'?'کانال':'گروه')+' • '+Object.keys(d.members||{}).length+' عضو'));
-  const mem=isMember(),canPost=mem&&d.type!=='bot'&&(d.type!=='channel'||d.owner===uid);
-  ['txt','send','attBtn','imgBtn','emoBtn'].forEach(i=>$(i).classList.toggle('hide',!canPost));
-  $('joinBtn').classList.toggle('hide',!!mem);
-  if(!mem&&d.type!=='dm')$('joinBtn').textContent='پیوستن به '+(d.type==='channel'?'کانال':'گروه');
+function setSub(){
+  const d=curData;if(!d)return;let t;
+  if(typers)t='در حال تایپ...';
+  else if(d.type==='dm')t=pres===true?'آنلاین':(typeof pres==='number'?'آخرین بازدید: '+new Date(pres).toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'}):(d.handle?'@'+d.handle:''));
+  else t=d.sub||(kind(d)+' • '+Object.keys(d.members||{}).length+' عضو');
+  $('chSub').textContent=t;
 }
+function head(){
+  const d=curData;setAv($('chAv'),d.photo,d.icon||d.name);$('chName').textContent=d.name||'';setSub();
+  const mem=isMember(),canPost=mem&&(d.type!=='channel'||staff(d));
+  ['txt','send','attBtn','imgBtn'].forEach(i=>$(i).classList.toggle('hide',!canPost));
+  $('joinBtn').classList.toggle('hide',!!mem);$('ro').classList.toggle('hide',!(mem&&!canPost));
+  if(!mem&&d.type!=='dm')$('joinBtn').textContent='پیوستن به '+kind(d);
+}
+function markRead(id){if(isPin(id))return;reads[id]=Date.now();set(ref(db,'reads/'+uid+'/'+id),reads[id]).catch(()=>{})}
 async function openChat(id,preset){
-  cur=id;curData=preset||chats[id]||(await get(ref(db,'chats/'+id))).val()||{};openedAt=Date.now();
-  $('app').classList.add('in');$('ph').classList.add('hide');$('chat').classList.remove('hide');$('emo').classList.add('hide');
-  head();renderList();$('msgs').innerHTML='';if(stopMsgs)stopMsgs();
-  const q=query(ref(db,'messages/'+id),limitToLast(150)),type=curData.type;
+  cur=id;curData=preset||chats[id]||(await get(ref(db,'chats/'+id))).val()||{};openedAt=Date.now();pres=null;typers=0;
+  $('app').classList.add('in');$('ph').classList.add('hide');$('chat').classList.remove('hide');
+  head();renderList();$('msgs').innerHTML='';if(stopMsgs)stopMsgs();if(stopX)stopX();markRead(id);
+  const q=query(ref(db,'messages/'+id),limitToLast(150)),type=curData.type,offs=[];
+  if(type==='dm'){const o=Object.keys(curData.members||{}).find(k=>k!==uid);if(o)offs.push(onValue(ref(db,'presence/'+o),s=>{pres=s.val();setSub()}))}
+  if(!isPin(id))offs.push(onValue(ref(db,'typing/'+id),s=>{typers=Object.keys(s.val()||{}).filter(k=>k!==uid).length;setSub()}));
   const build=async(m,key)=>{
     const d=el('div','m'+(m.uid===uid?' me':''));d.dataset.k=key;
     if(m.uid!==uid&&!['dm','bot','saved'].includes(type)){const u=await getUser(m.uid);d.append(el('span','n',u.name))}
     if(m.img){const i=new Image();i.src=m.img;i.onclick=()=>{const w=window.open();w.document.write('<img style="max-width:100%" src="'+m.img+'">')};d.append(i)}
-    if(m.file){const a=el('a','f','📄 '+m.file.name);a.href=m.file.data;a.download=m.file.name;d.append(a)}
+    if(m.file){const a=el('a','f','فایل: '+m.file.name);a.href=m.file.data;a.download=m.file.name;d.append(a)}
     if(m.text)linkify(d,m.text);
     d.append(el('time',null,new Date(m.ts).toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'})+(m.edited?' • ویرایش‌شده':'')));
     let tm;const stop=()=>{clearTimeout(tm);d.classList.remove('hold')};
@@ -305,22 +366,23 @@ async function openChat(id,preset){
   const u1=onChildAdded(q,async s=>{
     if(cur!==id)return;const box=$('msgs'),nb=box.scrollHeight-box.scrollTop-box.clientHeight<120,m=s.val(),d=await build(m,s.key);
     box.append(d);if(nb||m.uid===uid)box.scrollTop=box.scrollHeight;
-    if(m.uid!==uid&&m.ts>openedAt&&S.snd)beep();
+    if(m.uid!==uid&&m.ts>openedAt){if(S.snd)beep();markRead(id)}
   });
   const u2=onChildChanged(q,async s=>{const o=$('msgs').querySelector('[data-k="'+s.key+'"]');if(o)o.replaceWith(await build(s.val(),s.key))});
   const u3=onChildRemoved(q,s=>{const o=$('msgs').querySelector('[data-k="'+s.key+'"]');if(o)o.remove()});
-  stopMsgs=()=>{u1();u2();u3()};
+  stopMsgs=()=>{u1();u2();u3()};stopX=()=>offs.forEach(f=>f());
 }
 /* منوی نگه‌داشتن ۲ ثانیه‌ای روی پیام */
 function msgMenu(m,key,id){
+  const d=curData;
   modal((b,close)=>{
     b.append(el('h3',null,'پیام'));
     const add=(t,f)=>{const x=el('button','btn g',t);x.onclick=()=>{close();f()};b.append(x)};
-    if(m.uid===uid&&m.text)add('✏️ ویرایش',()=>editMsg(m,key,id));
-    if(m.text)add('📋 کپی',()=>copyT(m.text));
-    add('📤 اشتراک‌گذاری',()=>shareMsg(m));
-    if(id!==savedId())add('⭐ ذخیره در پیام‌های ذخیره‌شده',()=>saveMsg(m));
-    if(m.uid===uid)add('🗑️ حذف',()=>{if(confirm('این پیام حذف شود؟'))remove(ref(db,'messages/'+id+'/'+key))});
+    if(m.uid===uid&&m.text)add('ویرایش',()=>editMsg(m,key,id));
+    if(m.text)add('کپی',()=>copyT(m.text));
+    add('اشتراک‌گذاری',()=>shareMsg(m));
+    if(id!==savedId())add('ذخیره در پیام‌های ذخیره‌شده',()=>saveMsg(m));
+    if(m.uid===uid||staff(d))add('حذف',()=>{if(confirm('این پیام حذف شود؟'))remove(ref(db,'messages/'+id+'/'+key))});
   });
 }
 function editMsg(m,key,id){
@@ -329,7 +391,6 @@ function editMsg(m,key,id){
     ok.onclick=()=>{const v=t.value.trim();if(v){update(ref(db,'messages/'+id+'/'+key),{text:v,edited:true});close()}};b.append(ok);
   });
 }
-async function copyT(t){try{await navigator.clipboard.writeText(t)}catch(e){const x=document.createElement('textarea');x.value=t;document.body.append(x);x.select();document.execCommand('copy');x.remove()}toast('کپی شد')}
 async function shareMsg(m){
   try{
     if(m.img){const bl=await (await fetch(m.img)).blob(),f=new File([bl],'image.jpg',{type:bl.type});if(navigator.canShare&&navigator.canShare({files:[f]}))return await navigator.share({files:[f],text:m.text||''})}
@@ -337,13 +398,21 @@ async function shareMsg(m){
     await copyT((m.text||'')+'\n'+SITE);
   }catch(e){}
 }
-async function saveMsg(m){const o={uid,ts:Date.now()};['text','img','file'].forEach(k=>{if(m[k])o[k]=m[k]});await push(ref(db,'messages/'+savedId()),o);toast('ذخیره شد ⭐')}
+async function saveMsg(m){const o={uid,ts:Date.now()};['text','img','file'].forEach(k=>{if(m[k])o[k]=m[k]});await push(ref(db,'messages/'+savedId()),o);toast('ذخیره شد')}
 
+let tt,tOn='';
+function stopTyping(){clearTimeout(tt);if(tOn){remove(ref(db,'typing/'+tOn+'/'+uid)).catch(()=>{});tOn=''}}
+$('txt').oninput=()=>{
+  if(!cur||isPin(cur)||!isMember())return;
+  if(tOn!==cur){stopTyping();tOn=cur;const r=ref(db,'typing/'+cur+'/'+uid);set(r,true);onDisconnect(r).remove()}
+  clearTimeout(tt);tt=setTimeout(stopTyping,2500);
+};
 async function post(m){
   if(!cur||!isMember())return;
-  m.uid=uid;m.ts=Date.now();
-  await push(ref(db,'messages/'+cur),m);
-  if(!isPin(cur))await update(ref(db,'chats/'+cur),{lastTs:m.ts,lastText:m.text||(m.img?'🖼️ عکس':'📄 فایل')});
+  const id=cur;m.uid=uid;m.ts=Date.now();
+  await push(ref(db,'messages/'+id),m);stopTyping();
+  if(!isPin(id))await update(ref(db,'chats/'+id),{lastTs:m.ts,lastBy:uid,lastText:m.text||(m.img?'عکس':'فایل')});
+  if(id===botId()&&m.text)botReply(m.text);
 }
 $('send').onclick=()=>{const t=$('txt').value.trim();if(!t)return;$('txt').value='';post({text:t}).catch(()=>toast('ارسال نشد'))};
 $('txt').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&innerWidth>760){e.preventDefault();$('send').click()}};
@@ -352,8 +421,6 @@ $('attBtn').onclick=async()=>{const f=await pick($('fAny'));if(!f)return;
   if(f.size>700*1024)return toast('حداکثر حجم فایل ۷۰۰ کیلوبایت است');
   post({file:{name:f.name,data:await readURL(f)}}).catch(()=>toast('ارسال نشد'))};
 $('joinBtn').onclick=async()=>{await update(ref(db),{['chats/'+cur+'/members/'+uid]:true,['userChats/'+uid+'/'+cur]:true});curData.members={...curData.members,[uid]:true};head()};
-['😀','😂','😍','🥰','😎','🤔','😭','😡','👍','👎','🙏','👏','🔥','🎉','❤️','💜','💙','✨','😴','🤝'].forEach(e=>{const b=el('button',null,e);b.onclick=()=>{$('txt').value+=e;$('txt').focus()};$('emo').append(b)});
-$('emoBtn').onclick=()=>$('emo').classList.toggle('hide');
 $('back').onclick=()=>{$('app').classList.remove('in')};
 
 /* ---------- menus ---------- */
@@ -362,12 +429,20 @@ $('menuBtn').onclick=e=>{e.stopPropagation();toggle('mainMenu')};
 document.addEventListener('click',()=>document.querySelectorAll('.menu').forEach(m=>m.classList.add('hide')));
 $('mainMenu').onclick=e=>{const a=e.target.dataset.a;if(a==='group')createModal('group');if(a==='channel')createModal('channel');if(a==='logout')signOut(auth).then(()=>location.reload())};
 $('chatMenuBtn').onclick=e=>{
-  e.stopPropagation();const m=$('chatMenu');m.innerHTML='';
+  e.stopPropagation();const m=$('chatMenu');m.innerHTML='';const d=curData,g=d.type==='group'||d.type==='channel';
   const add=(t,f)=>{const b=el('button',null,t);b.onclick=f;m.append(b)};
-  add('ℹ️ اطلاعات',infoModal);
-  if(isMember()&&curData.type!=='dm'&&!isPin(cur))add('🚪 ترک '+(curData.type==='channel'?'کانال':'گروه'),async()=>{await update(ref(db),{['chats/'+cur+'/members/'+uid]:null,['userChats/'+uid+'/'+cur]:null});cur=null;$('chat').classList.add('hide');$('ph').classList.remove('hide');$('app').classList.remove('in')});
+  add('اطلاعات',infoModal);
+  if(g)add('اعضا',membersModal);
+  if(g&&isMember()&&staff(d))add('ویرایش اطلاعات',editChatModal);
+  if(g&&d.handle)add('کپی لینک دعوت',()=>copyT(SITE+'?c='+d.handle));
+  if(g&&isMember())add('ترک '+kind(d),leave);
   toggle('chatMenu');
 };
+async function leave(){
+  const d=curData;if(isOwner(d))return toast('مالک نمی‌تواند خارج شود');
+  await update(ref(db),{['chats/'+cur+'/members/'+uid]:null,['chats/'+cur+'/admins/'+uid]:null,['userChats/'+uid+'/'+cur]:null});
+  if(stopMsgs)stopMsgs();cur=null;$('chat').classList.add('hide');$('ph').classList.remove('hide');$('app').classList.remove('in');
+}
 function showView(v){
   ['tabs','topbar','list'].forEach(i=>$(i).classList.toggle('hide',v!=='chats'));
   $('pview').classList.toggle('hide',v!=='profile');$('sview').classList.toggle('hide',v!=='settings');
@@ -377,13 +452,6 @@ function showView(v){
   if(v==='chats')renderList();
 }
 $('nav').onclick=e=>{const b=e.target.closest('button');if(b)showView(b.dataset.v)};
-async function welcome(){
-  const k='mcw_'+uid;if(sessionStorage.getItem(k))return;
-  try{sessionStorage.setItem(k,'1')}catch(e){}
-  const dt=new Date().toLocaleString('fa-IR',{dateStyle:'full',timeStyle:'short'});
-  await push(ref(db,'messages/'+botId()),{uid:'bot',ts:Date.now(),text:`سلام ${me.name||''} 👋\nبه ماکوان خوش آمدید!\n\n📅 تاریخ ورود: ${dt}\n🔗 ${SITE}`}).catch(()=>{});
-  if(innerWidth>760)openChat(botId(),pins().bot);
-}
 
 /* ---------- modals ---------- */
 function modal(build){
@@ -391,6 +459,8 @@ function modal(build){
   w.onclick=e=>{if(e.target===w)m.innerHTML=''};build(b,()=>m.innerHTML='');
 }
 function field(p,ph,val,area){const i=el(area?'textarea':'input');i.placeholder=ph;i.value=val||'';if(area)i.rows=3;p.append(i);return i}
+const closeBtn=(b,close)=>{const c=el('button','btn g','بستن');c.onclick=close;b.append(c)};
+
 function profileModal(first){modal((b,close)=>{buildProfile(b,close,first)})}
 async function buildProfile(b,close,first){
   b.innerHTML='';
@@ -410,7 +480,7 @@ async function buildProfile(b,close,first){
   };
   av.onclick=addPh;n.oninput=u.oninput=paint;paint();
   const ok=el('button','btn','ذخیره');b.append(er,ok);
-  if(!first){const sb=el('button','btn g','⚙️ تنظیمات');sb.onclick=()=>showView('settings');b.append(sb)}
+  if(!first){const sb=el('button','btn g','تنظیمات');sb.onclick=()=>showView('settings');b.append(sb)}
   ok.onclick=async()=>{
     const un=clean(u.value),nm=n.value.trim();
     if(!nm)return er.textContent='نام را وارد کن';
@@ -426,33 +496,33 @@ async function buildProfile(b,close,first){
 }
 function buildSettings(b){
   b.innerHTML='';const re=()=>buildSettings(b);
-  const hd=el('div','hdr'),bk=el('button','ib','➜');bk.onclick=()=>showView('profile');hd.append(bk,el('h3',null,'⚙️ تنظیمات'));b.append(hd,el('div','sec','🎨 تم‌ها'));
+  const hd=el('div','hdr'),bk=el('button','ib','➜');bk.onclick=()=>showView('profile');hd.append(bk,el('h3',null,'تنظیمات'));b.append(hd,el('div','sec','تم‌ها'));
   const tg=el('div','grid');
   Object.entries(THEMES).forEach(([k,t])=>{const x=el('button','sw'+(S.theme===k?' on':''),t.n);x.style.background=t.me;x.onclick=()=>{S.theme=k;saveS();applyS();re()};tg.append(x)});
-  b.append(tg,el('div','sec','🖼️ پس‌زمینه'));
+  b.append(tg,el('div','sec','پس‌زمینه'));
   const bg=el('div','grid');
   Object.entries(BGS).forEach(([k,v])=>{const x=el('button','sw'+(S.bg===k?' on':''),v.n);x.style.background=v.c();x.onclick=()=>{S.bg=k;saveS();applyS();re()};bg.append(x)});
   b.append(bg);
-  const gb=el('button','btn g','📷 انتخاب عکس از گالری');
+  const gb=el('button','btn g','انتخاب عکس از گالری');
   gb.onclick=async()=>{const f=await pick($('fAv'));if(!f)return;S.bg='img';S.bgImg=await shrink(f,1400,.6);saveS();applyS();re()};b.append(gb);
-  if(S.bgImg){const rb=el('button','btn g','🗑️ حذف عکس پس‌زمینه');rb.onclick=()=>{S.bgImg='';if(S.bg==='img')S.bg='emoji';saveS();applyS();re()};b.append(rb)}
-  b.append(el('div','sec','🔠 اندازه متن پیام‌ها'));
+  if(S.bgImg){const rb=el('button','btn g','حذف عکس پس‌زمینه');rb.onclick=()=>{S.bgImg='';if(S.bg==='img')S.bg='emoji';saveS();applyS();re()};b.append(rb)}
+  b.append(el('div','sec','اندازه متن پیام‌ها'));
   const r=el('input');r.type='range';r.min=12;r.max=22;r.value=S.fs;r.oninput=()=>{S.fs=+r.value;saveS();applyS()};b.append(r);
-  const sn=el('button','btn g',S.snd?'🔔 صدای پیام: روشن':'🔕 صدای پیام: خاموش');sn.onclick=()=>{S.snd=!S.snd;saveS();re()};b.append(sn);
-  b.append(el('div','sec','🛟 پشتیبانی'));
+  const sn=el('button','btn g',S.snd?'صدای پیام: روشن':'صدای پیام: خاموش');sn.onclick=()=>{S.snd=!S.snd;saveS();re()};b.append(sn);
+  b.append(el('div','sec','پشتیبانی'));
   const c=el('div','card'),r2=el('div','row2');
-  const call=el('a','btn','📞 تماس');call.href='tel:'+SUPPORT;
-  const sms=el('a','btn','💬 پیامک');sms.href='sms:'+SUPPORT;
-  const cp=el('button','btn g','📋 کپی');cp.onclick=()=>copyT(SUPPORT);
+  const call=el('a','btn','تماس');call.href='tel:'+SUPPORT;
+  const sms=el('a','btn','پیامک');sms.href='sms:'+SUPPORT;
+  const cp=el('button','btn g','کپی');cp.onclick=()=>copyT(SUPPORT);
   r2.append(call,sms,cp);c.append(el('div',null,'برای راهنمایی یا گزارش مشکل با ما در تماس باش'),el('b',null,SUPPORT),r2);b.append(c);
 }
 function createModal(type){
   modal((b,close)=>{
     b.append(el('h3',null,type==='channel'?'کانال جدید':'گروه جدید'));
     const av=el('div','av lg');av.style.margin='0 auto';setAv(av,'',type==='channel'?'C':'G');let ph='';
-    av.onclick=async()=>{const f=await pick($('fAv'));if(f){ph=await shrink(f,256,.8);setAv(av,ph)}};b.append(av);
-    const n=field(b,'نام'),h=field(b,'آیدی عمومی (انگلیسی)'),d=field(b,'توضیحات',0,1),er=el('div','err');h.style.direction='ltr';b.append(er);
-    const ok=el('button','btn','ساخت');b.append(ok);
+    av.onclick=async()=>{const f=await pick($('fAv'));if(f){ph=await shrink(f,256,.8);setAv(av,ph)}};b.append(av,el('div','mut','برای انتخاب عکس بزن'));
+    const n=field(b,'نام'),h=field(b,'آیدی عمومی (انگلیسی)'),d=field(b,'بیوگرافی / توضیحات',0,1),er=el('div','err');h.style.direction='ltr';b.append(er);
+    const ok=el('button','btn','ساخت');b.append(ok);closeBtn(b,close);
     ok.onclick=async()=>{
       const hd=clean(h.value),nm=n.value.trim();
       if(!nm)return er.textContent='نام را وارد کن';
@@ -465,14 +535,69 @@ function createModal(type){
   });
 }
 async function infoModal(){
-  const d=curData;let other=null;if(d.type==='dm')other=await getUser(d.other);
+  const d=curData,g=d.type==='group'||d.type==='channel';let other=null;
+  if(d.type==='dm')other=await getUser(Object.keys(d.members||{}).find(k=>k!==uid));
   modal((b,close)=>{
-    const av=el('div','av lg');av.style.margin='0 auto';setAv(av,d.photo,d.name);
+    const av=el('div','av lg');av.style.margin='0 auto';setAv(av,d.photo,d.icon||d.name);
     b.append(av,el('h3',null,d.name||''));
     if(d.handle)b.append(el('div','mut','@'+d.handle));
     const t=other?other.bio:d.desc;if(t)b.append(el('p',null,t));
-    if(d.members)b.append(el('div','mut',Object.keys(d.members).length+' عضو'));
-    const c=el('button','btn g','بستن');c.onclick=close;b.append(c);
+    if(g){b.append(el('div','mut',Object.keys(d.members||{}).length+' عضو'));const mb=el('button','btn','مشاهده اعضا');mb.onclick=()=>{close();membersModal()};b.append(mb)}
+    closeBtn(b,close);
+  });
+}
+/* ---------- مدیریت: اعضا، مدیر، حذف، ویرایش ---------- */
+function membersModal(){
+  const id=cur,d=curData;
+  modal((b,close)=>{
+    b.append(el('h3',null,'اعضا ('+Object.keys(d.members||{}).length+')'));
+    const L=el('div');L.style.cssText='display:flex;flex-direction:column;gap:2px;overflow:auto';b.append(L);
+    (async()=>{
+      const ids=Object.keys(d.members||{}).slice(0,200),us=await Promise.all(ids.map(i=>getUser(i)));
+      const rank=i=>d.owner===i?0:(d.admins&&d.admins[i])?1:2;
+      ids.map((i,k)=>[i,us[k]]).sort((a,c)=>rank(a[0])-rank(c[0])).forEach(([i,u])=>{
+        const r=el('div','row'),a=el('div','av');setAv(a,u.photo,u.name);
+        const t=el('div'),bn=el('b',null,u.name||''),role=rank(i)===0?'مالک':rank(i)===1?'مدیر':'';
+        if(role)bn.append(el('i','tag',role));
+        t.append(bn,el('span',null,u.username?'@'+u.username:''));r.append(a,t);
+        r.onclick=()=>{close();userModal(i,u)};L.append(r);
+      });
+    })();
+    closeBtn(b,close);
+  });
+}
+function userModal(i,u){
+  const id=cur,d=curData;
+  modal((b,close)=>{
+    const av=el('div','av lg');av.style.margin='0 auto';setAv(av,u.photo,u.name);
+    b.append(av,el('h3',null,u.name||''));
+    if(u.username)b.append(el('div','mut','@'+u.username));
+    if(u.bio)b.append(el('p',null,u.bio));
+    const adm=!!(d.admins&&d.admins[i]);
+    b.append(el('div','mut','نقش: '+(i===d.owner?'مالک':adm?'مدیر':'عضو')));
+    const add=(t,f,g)=>{const x=el('button','btn'+(g?' g':''),t);x.onclick=async()=>{close();await f()};b.append(x)};
+    if(i!==uid)add('ارسال پیام',()=>openDM(i));
+    if(isOwner(d)&&i!==uid){
+      if(adm)add('لغو مدیریت',()=>update(ref(db),{['chats/'+id+'/admins/'+i]:null}).then(()=>toast('مدیریت لغو شد')),1);
+      else add('ارتقا به مدیر',()=>update(ref(db),{['chats/'+id+'/admins/'+i]:true}).then(()=>toast('به مدیر ارتقا یافت')),1);
+    }
+    if(i!==uid&&i!==d.owner&&(isOwner(d)||(isAdm(d)&&!adm)))
+      add('حذف از '+kind(d),()=>{if(confirm('این کاربر حذف شود؟'))return update(ref(db),{['chats/'+id+'/members/'+i]:null,['chats/'+id+'/admins/'+i]:null,['userChats/'+i+'/'+id]:null}).then(()=>toast('حذف شد'))},1);
+    closeBtn(b,close);
+  });
+}
+function editChatModal(){
+  const id=cur,d=curData;let ph=d.photo||'';
+  modal((b,close)=>{
+    b.append(el('h3',null,'ویرایش '+kind(d)));
+    const av=el('div','av lg');av.style.margin='0 auto';setAv(av,ph,d.name);
+    av.onclick=async()=>{const f=await pick($('fAv'));if(f){ph=await shrink(f,256,.8);setAv(av,ph,d.name)}};
+    b.append(av,el('div','mut','برای تغییر عکس بزن'));
+    const n=field(b,'نام',d.name),bio=field(b,'بیوگرافی / توضیحات',d.desc,1);
+    const ok=el('button','btn','ذخیره'),rp=el('button','btn g','حذف عکس');
+    rp.onclick=()=>{ph='';setAv(av,'',d.name)};
+    ok.onclick=async()=>{const nm=n.value.trim();if(!nm)return toast('نام را وارد کن');await update(ref(db,'chats/'+id),{name:nm,desc:bio.value.trim(),photo:ph});close();toast('ذخیره شد')};
+    b.append(ok,rp);closeBtn(b,close);
   });
 }
 </script>
